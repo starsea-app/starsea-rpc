@@ -35,6 +35,10 @@ func (p *Plaza) Universes(rsp interface{}) error {
 	return p.Call("univs", H{}, rsp)
 }
 
-func (p *Plaza) Subscribe(typ uint8, publish string, data map[string]interface{}, rsp interface{}) error {
-	return p.Call("subscribe", H{"type": typ, "publish": publish, "data": data}, &rsp)
+func (p *Plaza) Subscribe(typ uint8, token string, publish string, rsp interface{}) error {
+	return p.Call("subscribe", H{"type": typ, "publish": publish, "data": H{"token": token}}, &rsp)
+}
+
+func (p *Plaza) Onlines(typ uint8, time int64, rsp interface{}) error {
+	return p.Call("onlines", H{"type": typ, "time": time}, rsp)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"time"
 
@@ -79,7 +78,6 @@ func (c *Client) Receive(quit chan struct{}) {
 }
 
 func (c *Client) handleReceive(rev *protocol.Message) {
-	fmt.Println("<<<<-", rev.ServicePath, rev.ServicePath)
 	if handler, ok := c.routers[rev.ServiceMethod]; ok {
 		handler(&Context{msg: rev})
 	}

@@ -70,11 +70,13 @@ func (s *Server) Handle(m string, fn interface{}) {
 func (s *Server) handle(c *server.Context, h interface{}) error {
 	defer func() {
 		if err := recover(); err != nil {
+			fmt.Printf("--> %v.%v %v\n", c.ServicePath(), c.ServiceMethod(), fmt.Sprintf(`{"code":500,"msg":"%v"}`, err))
 			c.Write(map[string]interface{}{"code": 500, "msg": err})
 		}
 	}()
 
-	fmt.Printf("<-- %v.%v \n", c.ServicePath(), c.ServiceMethod())
+	var raw json.RawMessage
+	c.Bind(&raw)
 
 	var result interface{}
 	switch fn := h.(type) {
@@ -127,8 +129,6 @@ func (s *Server) handle(c *server.Context, h interface{}) error {
 		if v != nil {
 			dict["data"] = v
 		}
-		byts, _ := json.Marshal(dict)
-		fmt.Printf("--> %v.%v %v\n", c.ServicePath(), c.ServiceMethod(), string(byts))
 		c.Write(dict)
 	}
 	return nil
