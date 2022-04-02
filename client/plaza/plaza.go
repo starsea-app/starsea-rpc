@@ -39,6 +39,6 @@ func (p *Plaza) Subscribe(typ uint8, token string, publish string, rsp interface
 	return p.Call("subscribe", H{"type": typ, "publish": publish, "data": H{"token": token}}, &rsp)
 }
 
-func (p *Plaza) Onlines(typ uint8, time int64, rsp interface{}) error {
-	return p.Call("onlines", H{"type": typ, "time": time}, rsp)
+func (p *Plaza) Onlines(typ uint8, uid uint, time int64, rsp interface{}) error {
+	return p.Call("onlines", H{"type": typ, "uid": uid, "time": time}, rsp)
 }
