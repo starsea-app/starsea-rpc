@@ -23,8 +23,12 @@ func (p *Plaza) Assets(address string, froms []string, rsp interface{}) error {
 	return p.Call("assets", H{"address": address, "tokens": froms}, &rsp)
 }
 
-func (p *Plaza) Router(notice string, rsp interface{}) error {
-	return p.Call("router", H{"notice": notice}, rsp)
+func (p *Plaza) Router(notice string, rsp interface{}, args ...string) error {
+	values := H{"notice": notice}
+	for i := 0; i < len(args)/2; i++ {
+		values[args[i*2]] = args[i*2+1]
+	}
+	return p.Call("router", values, rsp)
 }
 
 func (p *Plaza) Listen(addr string) error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/smallnest/rpcx/server"
@@ -67,6 +68,12 @@ func (c *client) Call(m string, req interface{}) error {
 	byts, err := json.Marshal(req)
 	if err != nil {
 		return errors.New("request not serialization")
+	}
+	if strings.HasPrefix(m, "$") {
+		if v, ok := c.Get(m[1:]).(string); ok {
+			return c.svr.SendMessage(c.conn, "", v, nil, byts)
+		}
+		return errors.New("request method is not found")
 	}
 	return c.svr.SendMessage(c.conn, "", m, nil, byts)
 }
