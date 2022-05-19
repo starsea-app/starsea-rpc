@@ -60,8 +60,11 @@ func NewClient(addr string) *Client {
 }
 
 func (c *Client) Connect() error {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+
 	var rsp string
-	err := c.cli.Call(context.TODO(), "_HELLO", nil, &rsp)
+	err := c.cli.Call(ctx, "_HELLO", nil, &rsp)
 	if err != nil {
 		return err
 	}
@@ -122,7 +125,10 @@ func (c *Client) Call(m string, req, rsp interface{}) error {
 		Msg  string
 		Data json.RawMessage
 	}
-	err := c.cli.Call(context.TODO(), m, req, &result)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+
+	err := c.cli.Call(ctx, m, req, &result)
 	if err != nil {
 		return err
 	}

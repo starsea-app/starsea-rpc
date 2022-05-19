@@ -16,6 +16,8 @@ import (
 
 const AuthorizeKey = "__AUTHORIZE"
 
+type PluginContainer = server.PluginContainer
+
 type OptionFn = server.OptionFn
 type Context = server.Context
 
@@ -27,8 +29,9 @@ type Server struct {
 	svr  *server.Server
 	auth Authorize
 
-	mux   sync.RWMutex
-	conns map[string]*client
+	mux     sync.RWMutex
+	conns   map[string]*client
+	accepts []func(Client)
 }
 
 func NewServer(options ...OptionFn) *Server {
@@ -42,7 +45,7 @@ func NewServer(options ...OptionFn) *Server {
 
 func (s *Server) Serve(addr string) error {
 	s.svr.AuthFunc = s.authorize
-	s.svr.Plugins.Add(s)
+	s.svr.Plugins.Add(&plugin{Closer: s.handleConnClose})
 
 	if !strings.Contains(addr, "@") {
 		return errors.New("addr is invalid")
@@ -52,13 +55,9 @@ func (s *Server) Serve(addr string) error {
 	return nil
 }
 
-// func (s *Server) ForEach() {
-// 	s.mux.RLock()
-// 	defer s.mux.RUnlock()
-// 	for _, c := range s.conns {
-
-// 	}
-// }
+func (s *Server) GetPlugins() PluginContainer {
+	return s.svr.Plugins
+}
 
 func (s *Server) Call(prefix, m string, req interface{}) error {
 	s.mux.RLock()
@@ -76,6 +75,10 @@ func (s *Server) Handle(m string, fn interface{}) {
 	s.svr.AddHandler("starsea.platform", m, func(ctx *server.Context) error {
 		return s.handle(ctx, fn)
 	})
+}
+
+func (s *Server) HandleClientAccept(fn func(Client)) {
+	s.accepts = append(s.accepts, fn)
 }
 
 func (s *Server) handle(c *server.Context, h interface{}) error {
@@ -175,21 +178,24 @@ func (s *Server) authorize(ctx context.Context, r *protocol.Message, token strin
 		if sctx, ok := ctx.(*share.Context); ok {
 			sctx.SetValue(AuthorizeKey, s.conns[list[0]])
 		}
+
+		for _, fn := range s.accepts {
+			fn(s.conns[list[0]])
+		}
 		return nil
 	}
 	return errors.New("authorize fail")
 }
 
-func (s *Server) HandleConnClose(conn net.Conn) bool {
+func (s *Server) handleConnClose(conn net.Conn) {
 	s.mux.Lock()
 	for k, cli := range s.conns {
 		if cli.conn == conn {
 			delete(s.conns, k)
 			s.mux.Unlock()
 			cli.Close()
-			return true
+			return
 		}
 	}
 	s.mux.Unlock()
-	return true
 }
