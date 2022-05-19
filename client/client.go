@@ -16,6 +16,14 @@ type Context struct {
 	msg *protocol.Message
 }
 
+type connPlugin func(net.Conn)
+
+func (c *connPlugin) ClientConnected(conn net.Conn) (net.Conn, error) {
+	defer recover()
+	(*c)(conn)
+	return conn, nil
+}
+
 type closePlugin func(net.Conn)
 
 func (c *closePlugin) ClientConnectionClose(conn net.Conn) error {
@@ -51,12 +59,30 @@ func NewClient(addr string) *Client {
 	return &Client{cli: c, routers: make(map[string]func(*Context)), receive: ch}
 }
 
+func (c *Client) Connect() error {
+	var rsp string
+	err := c.cli.Call(context.TODO(), "_HELLO", nil, &rsp)
+	if err != nil {
+		return err
+	}
+	if rsp != "OK" {
+		return errors.New("reply is invalid")
+	}
+	return nil
+}
+
 func (c *Client) Close() error {
 	return c.cli.Close()
 }
 
 func (c *Client) Handle(m string, fn func(*Context)) {
 	c.routers[m] = fn
+}
+
+func (c *Client) HandleConnected(fn func(net.Conn)) {
+	if fn != nil {
+		c.cli.GetPlugins().Add((*connPlugin)(&fn))
+	}
 }
 
 func (c *Client) HandleDisconnected(fn func(net.Conn)) {

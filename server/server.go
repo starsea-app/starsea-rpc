@@ -33,7 +33,10 @@ type Server struct {
 
 func NewServer(options ...OptionFn) *Server {
 	s := server.NewServer(options...)
-
+	s.AddHandler("starsea.platform", "_HELLO", func(ctx *server.Context) error {
+		ctx.Write("OK")
+		return nil
+	})
 	return &Server{svr: s, conns: make(map[string]*client)}
 }
 
@@ -48,6 +51,14 @@ func (s *Server) Serve(addr string) error {
 	go s.svr.Serve(strs[0], strs[1])
 	return nil
 }
+
+// func (s *Server) ForEach() {
+// 	s.mux.RLock()
+// 	defer s.mux.RUnlock()
+// 	for _, c := range s.conns {
+
+// 	}
+// }
 
 func (s *Server) Call(prefix, m string, req interface{}) error {
 	s.mux.RLock()
